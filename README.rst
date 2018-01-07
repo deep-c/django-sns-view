@@ -1,4 +1,6 @@
-  
+.. image:: https://travis-ci.org/deep-c/django-sns-view.svg?branch=master
+    :target: https://travis-ci.org/deep-c/django-sns-view
+    
 ================
 Django SNS View
 ================
