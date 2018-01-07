@@ -13,7 +13,7 @@ setup(
     author='Deeptesh Chagan',
     packages=[
         'django_sns_view', 'django_sns_view.tests'],
-    url='https://github.com/deep-c/django_sns_view',
+    url='https://github.com/deep-c/django-sns-view',
     description=(
         "A Django view that can be subscribed to Amazon SNS"
     ),
