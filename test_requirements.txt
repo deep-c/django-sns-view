@@ -1,0 +1,8 @@
+tox==2.9.1
+nose
+requests
+django-nose
+coverage
+mock
+pyopenssl>=0.13.1
+pem>=16.0.0

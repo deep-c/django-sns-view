@@ -1,0 +1,24 @@
+language: python
+python:
+- '2.7'
+env:
+- DJANGO=django==1.8.*
+- DJANGO=django==1.11.*
+install:
+- pip install $DJANGO
+- pip install coveralls
+- pip install -r test_requirements.txt
+- python setup.py install
+script: python manage.py test
+notifications:
+  email: false
+deploy:
+  provider: pypi
+  user: deep-c
+  password:
+    secure: JphG13ZRqaXHUn1L+j2qX98mEn+CY6mEw505RMDrSudoL4U0luI6Uviqwb7PDbSreM6W1T99QEI/Z1kd2Ar9xrqzDEHuWix84Qv70ZXgGLlzo5t8tiHk7sSTfvixeAXFYBvrt/iKUOyWRC8TLckPhBmLTU0KzIqRM3pXvV/JSnoKBtdm/iMhElGDmh8/B1XUygBR4otFn5OdXaqLMPROnK4dziXXtlgSzvjI6eesV7WS7SfZgyS8YfOPhSsj4uv6Vv9/5eYerOy0ykRbaFkDKVZcB7VUf6a8U83D2H9Z0et2+gxGfHNfBX63UK+8aVbbvKoY8/6rok5qE1+TVMWxT5SZyiHmokWgY6WF6qryZ+J5LxGN4wB+clDMXbGxhfQNGq7Dg77gcoefSVkrgrnBhjY2+sL4p2qDeFTnfhFJXAOpQmWZiFlkvGVpmqoIThYmRMDYDLaRtVznjwTtxQg2A3AUGvs8gVtAVd3gRqQO2oEsxYGS6Hyyq1f5sTIqwNIbl+OoHgI2pMrrLsLosvFZpmXkf6OiIrfV1/RyUwHej/nalOKS9wvPbtaME0DvCv51iMmUqR812/2RUnDXTK/mhvqErvybstitQ5j2SpdgBxmS/L25AquG8bDX8kdCJYfz8IhZNJA97BUs9h/8YoKiWZr5ddx5quJM5jsaq+krZoM=
+  on:
+    tags: true
+    branch: master
+after_success:
+- coveralls
