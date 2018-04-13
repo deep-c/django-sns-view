@@ -1,15 +1,59 @@
 language: python
 python:
 - '2.7'
+- '3.3'
+- '3.4'
+- '3.5'
+- '3.6'
+- 'pypy'
 env:
 - DJANGO=django==1.8.*
 - DJANGO=django==1.11.*
+- DJANGO==2.0.*
+- DJANGO=git+https://github.com/django/django.git\#egg=django
 install:
 - pip install $DJANGO
-- pip install coveralls
-- pip install -r test_requirements.txt
 - python setup.py install
+- pip install -r test_requirements.txt
 script: python manage.py test
+matrix:
+  fast_finish: true
+  allow_failures:
+    # pypy testing is experimental
+    - python: "pypy"
+
+    # The latest version of django may just fail. That's fine, it's not stable
+    - env: DJANGO=git+https://github.com/django/django.git\#egg=django
+
+  exclude:
+    # Django 1.8 doesn't support python 3.6
+    - python: "3.6"
+      env: DJANGO=django==1.8.*
+
+    # Django 1.10 onward doesn't support python 3.3 or 3.4
+    - python: "3.3"
+      env: DJANGO=django==1.11.*
+    - python: "3.4"
+      env: DJANGO=django==1.11.*
+    - python: "3.3"
+      env: DJANGO==2.0.*
+    - python: "3.4"
+      env: DJANGO==2.0.*
+    - python: "3.3"
+      env: DJANGO=git+https://github.com/django/django.git\#egg=django
+    - python: "3.4"
+      env: DJANGO=git+https://github.com/django/django.git\#egg=django
+
+    # Django 2.0 onward doesn't support python 2.7
+    - python: "2.7"
+      env: DJANGO==2.0.*
+    - python: "2.7"
+      env: DJANGO=git+https://github.com/django/django.git\#egg=django
+
+    # Django 2.1 onward doesn't support python 3.5
+    - python: "3.5"
+      env: DJANGO=git+https://github.com/django/django.git\#egg=django
+
 notifications:
   email: false
 deploy:
