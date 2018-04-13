@@ -44,5 +44,5 @@ Usage
     class MySNSView(SNSEndpoint):
         # Can override SNSEndpoint attributes outlined above
 
-        def handle_message(message, payload):
+        def handle_message(self, message, payload):
             # Process the message
