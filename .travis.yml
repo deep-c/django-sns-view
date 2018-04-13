@@ -1,7 +1,6 @@
 language: python
 python:
 - '2.7'
-- '3.3'
 - '3.4'
 - '3.5'
 - '3.6'
@@ -9,9 +8,10 @@ python:
 env:
 - DJANGO=django==1.8.*
 - DJANGO=django==1.11.*
-- DJANGO==2.0.*
+- DJANGO=django==2.0.*
 - DJANGO=git+https://github.com/django/django.git\#egg=django
 install:
+- pip install --upgrade setuptools
 - pip install $DJANGO
 - python setup.py install
 - pip install -r test_requirements.txt
@@ -30,23 +30,17 @@ matrix:
     - python: "3.6"
       env: DJANGO=django==1.8.*
 
-    # Django 1.10 onward doesn't support python 3.3 or 3.4
-    - python: "3.3"
-      env: DJANGO=django==1.11.*
+    # Django 1.10 onward doesn't support python 3.4
     - python: "3.4"
       env: DJANGO=django==1.11.*
-    - python: "3.3"
-      env: DJANGO==2.0.*
     - python: "3.4"
-      env: DJANGO==2.0.*
-    - python: "3.3"
-      env: DJANGO=git+https://github.com/django/django.git\#egg=django
+      env: DJANGO=django==2.0.*
     - python: "3.4"
       env: DJANGO=git+https://github.com/django/django.git\#egg=django
 
     # Django 2.0 onward doesn't support python 2.7
     - python: "2.7"
-      env: DJANGO==2.0.*
+      env: DJANGO=django==2.0.*
     - python: "2.7"
       env: DJANGO=git+https://github.com/django/django.git\#egg=django
 
