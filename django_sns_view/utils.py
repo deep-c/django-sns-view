@@ -20,7 +20,7 @@ from django.utils.encoding import smart_bytes
 
 logger = logging.getLogger(__name__)
 
-NOTIFICATION_HASH_FORMAT = '''Message
+NOTIFICATION_HASH_FORMAT = u'''Message
 {Message}
 MessageId
 {MessageId}
@@ -34,7 +34,7 @@ Type
 {Type}
 '''
 
-NOTIFICATION_HASH_FORMAT_NO_SUBJECT = '''Message
+NOTIFICATION_HASH_FORMAT_NO_SUBJECT = u'''Message
 {Message}
 MessageId
 {MessageId}
@@ -46,7 +46,7 @@ Type
 {Type}
 '''
 
-SUBSCRIPTION_HASH_FORMAT = '''Message
+SUBSCRIPTION_HASH_FORMAT = u'''Message
 {Message}
 MessageId
 {MessageId}

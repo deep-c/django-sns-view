@@ -26,6 +26,7 @@ setup(
         'pyopenssl>=0.13.1',
         'pem>=16.0.0',
         'requests>=2.18.0',
+        'cffi>=1.11.5'
     ],
     keywords="aws sns django",
     classifiers=[

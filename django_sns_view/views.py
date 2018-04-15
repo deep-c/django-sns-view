@@ -54,8 +54,15 @@ class SNSEndpoint(View):
                     in getattr(settings, self.topic_settings_key)):
                 return HttpResponseBadRequest('Bad Topic')
 
+        if isinstance(request.body, str):
+            # requests return str in python 2.7
+            request_body = request.body
+        else:
+            # and return bytes in python 3.4
+            request_body = request.body.decode()
+
         try:
-            payload = json.loads(request.body.decode('utf-8'))
+            payload = json.loads(request_body)
         except ValueError:
             logger.error(
                 'Notification Not Valid JSON: {}'.format(request.body))
