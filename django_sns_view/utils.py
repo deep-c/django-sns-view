@@ -1,7 +1,6 @@
 from base64 import b64decode
 import logging
 import re
-import six
 import requests
 import pem
 
@@ -100,7 +99,7 @@ def verify_notification(payload):
     """
     pemfile = get_pemfile(payload['SigningCertURL'])
     cert = crypto.load_certificate(crypto.FILETYPE_PEM, pemfile)
-    signature = b64decode(six.b(payload['Signature']))
+    signature = b64decode(payload['Signature'].encode('utf-8'))
 
     if payload['Type'] == "Notification":
         if payload.get('Subject'):
@@ -112,7 +111,7 @@ def verify_notification(payload):
 
     try:
         crypto.verify(
-            cert, signature, six.b(hash_format.format(**payload)), 'sha1')
+            cert, signature, hash_format.format(**payload).encode('utf-8'), 'sha1')
     except crypto.Error as e:
         logger.error('Verification of signature raised an Error: %s', e)
         return False
