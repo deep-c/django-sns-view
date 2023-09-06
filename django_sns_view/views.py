@@ -13,6 +13,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.conf import settings
 
 from django_sns_view.utils import confirm_subscription, verify_notification
 
@@ -39,6 +40,23 @@ class SNSEndpoint(View):
         Process the SNS message.
         """
         raise NotImplementedError
+
+    def should_confirm_subscription(self, payload):
+        """
+        Determine if the subscription should be confirmed.
+        By default, we confirm all subscriptions.
+        If settings has an AWS_ACCOUNT_ID key, we only confirm subscriptions from that account.
+
+        This behavior can be overridden by subclassing and overriding this method.
+        """
+        if hasattr(settings, 'AWS_ACCOUNT_ID'):
+            arn = payload['TopicArn'].split(':')[4]
+            if  arn == settings.AWS_ACCOUNT_ID:
+                return True
+            else:
+                logger.warning("Recieved subscription confirmation from account %s, but only accepting from account %s", arn, settings.AWS_ACCOUNT_ID)
+                return False
+        return True
 
     def post(self, request):
         """
@@ -97,6 +115,8 @@ class SNSEndpoint(View):
             return HttpResponseBadRequest('Invalid Notification Type')
 
         if message_type == 'SubscriptionConfirmation':
+            if not self.should_confirm_subscription(payload):
+                return HttpResponseBadRequest("Subscription Denied")
             return confirm_subscription(payload)
         elif message_type == 'UnsubscribeConfirmation':
             # Don't handle unsubscribe notification here, just remove
