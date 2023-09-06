@@ -51,7 +51,8 @@ class SNSEndpoint(View):
         """
         if hasattr(settings, 'AWS_ACCOUNT_ID'):
             arn = payload['TopicArn'].split(':')[4]
-            if  arn == settings.AWS_ACCOUNT_ID:
+            print(arn)
+            if arn == settings.AWS_ACCOUNT_ID:
                 return True
             else:
                 logger.warning("Recieved subscription confirmation from account %s, but only accepting from account %s", arn, settings.AWS_ACCOUNT_ID)
