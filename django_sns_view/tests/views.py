@@ -134,3 +134,30 @@ class SNSEndpointTestCase(SNSBaseTest):
             json.loads(json.dumps(SNS_NOTIFICATION))
         )
         self.assertEqual(response.status_code, 200)
+
+    @override_settings(AWS_ACCOUNT_ID="919599206538")
+    @patch('django_sns_view.views.confirm_subscription')
+    @patch.object(SNSEndpoint, 'handle_message')
+    def test_subscribe_from_correct_account(self, mock, mock_confirm):
+        """
+        Test that subscriptions from the correct account work
+        with AWS_ACCOUNT_ID set
+        """
+        self.request.META['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = \
+            'SubscriptionConfirmation'
+        self.request._body = json.dumps(self.sns_confirmation)
+        self.endpoint(self.request)
+        self.assertTrue(mock_confirm.called)
+
+    @override_settings(AWS_ACCOUNT_ID="1010101010")
+    @patch.object(SNSEndpoint, 'handle_message')
+    def test_subscribe_from_another_account(self, mock):
+        """
+        Test that subscriptions from another account DO NOT work
+        if AWS_ACCOUNT_ID is set
+        """
+        self.request.META['HTTP_X_AMZ_SNS_MESSAGE_TYPE'] = \
+            'SubscriptionConfirmation'
+        self.request._body = json.dumps(self.sns_confirmation)
+        response = self.endpoint(self.request)
+        self.assertEqual(response.status_code, 400)

@@ -38,15 +38,6 @@ TEMPLATES = [{
 }]
 
 EXTERNAL_APPS = [
-    'django.contrib.admin',
-    'django.contrib.admindocs',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.messages',
-    'django.contrib.sessions',
-    'django.contrib.staticfiles',
-    'django.contrib.sitemaps',
-    'django.contrib.sites',
 ]
 
 INTERNAL_APPS = [
@@ -64,10 +55,10 @@ MIDDLEWARE_CLASSES = [
 
 SECRET_KEY = 'foobar'
 
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+#TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-NOSE_ARGS = [
-    '--with-xunit',
-    '--nologcapture',
-    '--cover-package=django_sns_view',
-]
+# NOSE_ARGS = [
+#     '--with-xunit',
+#     '--nologcapture',
+#     '--cover-package=django_sns_view',
+# ]
