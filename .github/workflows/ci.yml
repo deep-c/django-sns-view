@@ -79,11 +79,11 @@ jobs:
           python-version: "3.13"
 
       - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          poetry config virtualenvs.create true
-          poetry config virtualenvs.in-project true
-          poetry self add poetry-plugin-export
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
       - name: Configure PyPI token
         run: poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
