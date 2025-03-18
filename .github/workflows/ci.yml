@@ -56,7 +56,7 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run tests
-        run: poetry run tox --skip-env "^(?!${{ matrix.tox_env }})"
+        run: poetry run tox -e ${{ matrix.tox_env }}
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
