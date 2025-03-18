@@ -12,10 +12,6 @@ on:
   release:
     types: [created]
 
-env:
-  POETRY_CACHE_DIR: .cache/poetry
-  PIP_CACHE_DIR: .cache/pip
-
 jobs:
   test:
     name: Test Python ${{ matrix.python-version }}
