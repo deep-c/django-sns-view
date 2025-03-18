@@ -1,118 +1,112 @@
-"""Base SNS View"""
-import json
 import logging
 import re
 
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
-
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseBadRequest
-from django.views.generic import View
-from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import View
+import pydantic_core
 
-from django_sns_view.utils import confirm_subscription, verify_notification
-
+from .types import (
+    Notification,
+    SNSPayload,
+    SubscriptionConfirmation,
+    UnsubscribeConfirmation,
+)
+from .utils import confirm_subscription, verify_notification
 
 logger = logging.getLogger(__name__)
-DEFAULT_ALLOWED_MESSAGE_TYPES = [
-    'Notification', 'SubscriptionConfirmation', 'UnsubscribeConfirmation']
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class SNSEndpoint(View):
-    message_type_header = 'HTTP_X_AMZ_SNS_MESSAGE_TYPE'
-    topic_type_header = 'HTTP_X_AMZ_SNS_TOPIC_ARN'
-    allowed_message_types = DEFAULT_ALLOWED_MESSAGE_TYPES
-    cert_domain_settings_key = 'SNS_CERT_DOMAIN_REGEX'
-    sns_verify_settings_key = 'SNS_VERIFY_CERTIFICATE'
-    topic_settings_key = ''
+    topic_type_header: str = "HTTP_X_AMZ_SNS_TOPIC_ARN"
+    cert_domain_settings_key: str = "SNS_CERT_DOMAIN_REGEX"
+    sns_verify_settings_key: str = "SNS_VERIFY_CERTIFICATE"
+    topic_settings_key: str = ""
 
-    @method_decorator(csrf_exempt)
-    def dispatch(self, *args, **kwargs):
-        return super(SNSEndpoint, self).dispatch(*args, **kwargs)
-
-    def handle_message(self, message, notification):
+    def handle_message(self, message: str, notification: Notification) -> None:
         """
         Process the SNS message.
         """
         raise NotImplementedError
 
-    def post(self, request):
+    def post(self, request: HttpRequest) -> HttpResponse:
         """
         Validate and handle an SNS message.
         """
         # Check the topic if specified by a settings key
-        if hasattr(settings, self.topic_settings_key):
+        topic_allowlist = self.get_topic_allowlist()
+        if topic_allowlist is not None:
             if self.topic_type_header not in request.META:
-                return HttpResponseBadRequest('No TopicArn Header')
+                return HttpResponseBadRequest("No TopicArn Header")
 
             # Check to see if the topic is in the settings
-            if (not request.META[self.topic_type_header]
-                    in getattr(settings, self.topic_settings_key)):
-                return HttpResponseBadRequest('Bad Topic')
+            if request.META[self.topic_type_header] not in topic_allowlist:
+                return HttpResponseBadRequest("Bad Topic")
 
-        if isinstance(request.body, str):
-            # requests return str in python 2.7
-            request_body = request.body
-        else:
-            # and return bytes in python 3.4
-            request_body = request.body.decode()
-
+        # Parse and validate the request body
         try:
-            payload = json.loads(request_body)
-        except ValueError:
-            logger.error(
-                'Notification Not Valid JSON: {}'.format(request.body))
-            return HttpResponseBadRequest('Not Valid JSON')
+            payload = SNSPayload.model_validate_json(request.body).root
+        except pydantic_core.ValidationError:
+            logger.exception("Invalid payload")
+            return HttpResponseBadRequest("Invalid payload")
 
         # Confirm that the signing certificate is hosted on a correct domain
         # AWS by default uses sns.{region}.amazonaws.com
-        domain = urlparse(payload['SigningCertURL']).netloc
-        pattern = getattr(
-            settings, self.cert_domain_settings_key, r"sns.[a-z0-9\-]+.amazonaws.com$"
-        )
-        if not re.search(pattern, domain):
+        pattern = self.get_cert_domain_pattern()
+        if not payload.SigningCertURL.host or not re.search(
+            pattern, payload.SigningCertURL.host
+        ):
             logger.warning(
-                'Improper Certificate Location %s', payload['SigningCertURL'])
-            return HttpResponseBadRequest('Improper Certificate Location')
+                "Improper Certificate Location %s",
+                payload.SigningCertURL,
+            )
+            return HttpResponseBadRequest("Improper Certificate Location")
 
         # Verify that the notification is signed by Amazon
-        if (getattr(settings, self.sns_verify_settings_key, True)
-                and not verify_notification(payload)):
-            logger.error('Verification Failure %s', )
-            return HttpResponseBadRequest('Improper Signature')
+        if self.get_cert_verification_enabled() and not verify_notification(payload):
+            logger.error("Cert verification failed")
+            return HttpResponseBadRequest("Improper Signature")
 
-        if not self.message_type_header in request.META:
-            logger.error(
-                'HTTP_X_AMZ_SNS_MESSAGE_TYPE not found in request.META')
-            return HttpResponseBadRequest('HTTP_X_AMZ_SNS_MESSAGE_TYPE not set')
-
-        message_type = request.META[self.message_type_header]
-
-        if not message_type in self.allowed_message_types:
-            logger.warning('Notification Type Not Known %s', message_type)
-            return HttpResponseBadRequest('Invalid Notification Type')
-
-        if message_type == 'SubscriptionConfirmation':
+        # Handle subscription confirmations
+        if isinstance(payload, SubscriptionConfirmation):
             return confirm_subscription(payload)
-        elif message_type == 'UnsubscribeConfirmation':
+
+        # Handle unsubscribe confirmations
+        if isinstance(payload, UnsubscribeConfirmation):
             # Don't handle unsubscribe notification here, just remove
             # this endpoint from AWS console. Return 200 status
             # so redelivery of this message doesnt occur.
-            logger.info('UnsubscribeConfirmation Not Handled')
-            return HttpResponse('UnsubscribeConfirmation Not Handled')
+            logger.info("UnsubscribeConfirmation Not Handled")
+            return HttpResponse("UnsubscribeConfirmation Not Handled")
 
-        message = payload.get('Message')
-
-        logger.info('SNS Notification received', extra=dict(
-            message_type=message_type,
-            sns_payload=request.body,
-            payload_message=message,
-        ))
-
+        message = payload.Message
+        logger.info(
+            "SNS Notification received",
+            extra=dict(
+                message_type=payload.Type,
+                sns_payload=request.body,
+                payload_message=payload,
+            ),
+        )
         self.handle_message(message, payload)
+        return HttpResponse("OK")
 
-        return HttpResponse('OK')
+    def get_topic_allowlist(self) -> list[str] | None:
+        return getattr(settings, self.topic_settings_key, None)
+
+    def get_cert_domain_pattern(self) -> str:
+        return getattr(
+            settings,
+            self.cert_domain_settings_key,
+            r"sns.[a-z0-9\-]+.amazonaws.com$",
+        )
+
+    def get_cert_verification_enabled(self) -> bool:
+        return getattr(
+            settings,
+            self.sns_verify_settings_key,
+            True,
+        )
