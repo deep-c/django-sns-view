@@ -39,8 +39,8 @@ jobs:
           version: latest
           virtualenvs-create: true
           virtualenvs-in-project: true
-          plugins: |
-            poetry-plugin-export
+          # plugins: |
+          #   poetry-plugin-export
 
       - name: Load cached venv
         id: cached-pip-wheels
