@@ -1,30 +1,35 @@
 import os
 
-from django.test import TestCase
+from cryptography import x509
 from django.conf import settings
+from django.test import TestCase, override_settings
 
-from django_sns_view.tests.test_data.notifications import SNS_NOTIFICATION, SNS_NOTIFICATION_NO_SUBJECT, SNS_SUBSCRIPTION_NOTIFICATION
-
+from ..types import Notification, SubscriptionConfirmation, UnsubscribeConfirmation
+from .test_data.notifications import (
+    SNS_NOTIFICATION,
+    SNS_NOTIFICATION_NO_SUBJECT,
+    SNS_SUBSCRIPTION_NOTIFICATION,
+    SNS_UNSUBSCRIBE_NOTIFICATION,
+)
 
 DIRNAME, _ = os.path.split(os.path.abspath(__file__))
 
 
+@override_settings(SNS_STORY_TOPIC_ARN=["arn:aws:sns:us-west-2:123456789012:MyTopic"])
 class SNSBaseTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(SNSBaseTest, cls).setUpClass()
-        cls.old_topics = getattr(settings, '', None)
-        cls.sns_notification = SNS_NOTIFICATION
-        cls.sns_notification_no_subject = SNS_NOTIFICATION_NO_SUBJECT
-        cls.sns_confirmation = SNS_SUBSCRIPTION_NOTIFICATION
-        cls.keyfileobj = open(DIRNAME + ('/test_data/example.pem'))
-        cls.pemfile = cls.keyfileobj.read()
+    old_topics = getattr(settings, "", None)
 
-        settings.SNS_STORY_TOPIC_ARN = [
-            'arn:aws:sns:us-west-2:123456789012:MyTopic'
-        ]
+    sns_notification = Notification.model_validate(SNS_NOTIFICATION)
+    sns_notification_no_subject = Notification.model_validate(
+        SNS_NOTIFICATION_NO_SUBJECT
+    )
+    sns_confirmation = SubscriptionConfirmation.model_validate(
+        SNS_SUBSCRIPTION_NOTIFICATION
+    )
+    sns_unsubscribe = UnsubscribeConfirmation.model_validate(
+        SNS_UNSUBSCRIBE_NOTIFICATION
+    )
 
-    @classmethod
-    def tearDownClass(cls):
-        if cls.old_topics is not None:
-            settings.SNS_STORY_TOPIC_ARN = cls.old_topics
+    keyfileobj = open(DIRNAME + ("/test_data/example.pem"))
+    pemfile = keyfileobj.read().encode()
+    x509_cert = x509.load_pem_x509_certificate(pemfile)
