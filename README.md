@@ -23,7 +23,7 @@ topic_type_header = 'HTTP_X_AMZ_SNS_TOPIC_ARN'
 allowed_message_types = ['Notification', 'SubscriptionConfirmation', 'UnsubscribeConfirmation']
 cert_domain_settings_key = 'SNS_CERT_DOMAIN_REGEX'
 sns_verify_settings_key = 'SNS_VERIFY_CERTIFICATE'
-topic_settings_key = '' # If you would like to subscribe this endpoint only certain topics, create a setting containing a list of topics that are allowed.
+topic_settings_key = '' # If you would like to subscribe this endpoint to only certain topics, create a setting containing a list of topics that are allowed.
 ```
 
 ## Usage
