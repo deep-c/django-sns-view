@@ -1,6 +1,6 @@
 [project]
 name = "django-sns-view"
-version = "1.0.0"
+version = "1.0.1"
 description = "A Django view that can be subscribed to Amazon SNS"
 authors = [
     { name = "thelab", email = "thelabdev@thelab.co" },
