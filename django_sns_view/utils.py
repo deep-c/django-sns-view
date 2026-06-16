@@ -3,9 +3,11 @@ import logging
 import re
 import six
 import requests
-import pem
 
-from OpenSSL import crypto
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 from requests.exceptions import HTTPError
 try:
     from urlparse import urlparse
@@ -99,7 +101,7 @@ def verify_notification(payload):
     Returns True if verified, False if not
     """
     pemfile = get_pemfile(payload['SigningCertURL'])
-    cert = crypto.load_certificate(crypto.FILETYPE_PEM, pemfile)
+    cert = x509.load_pem_x509_certificate(smart_bytes(pemfile))
     signature = b64decode(six.b(payload['Signature']))
 
     if payload['Type'] == "Notification":
@@ -110,10 +112,11 @@ def verify_notification(payload):
     else:
         hash_format = SUBSCRIPTION_HASH_FORMAT
 
+    message = six.b(hash_format.format(**payload))
     try:
-        crypto.verify(
-            cert, signature, six.b(hash_format.format(**payload)), 'sha1')
-    except crypto.Error as e:
+        cert.public_key().verify(
+            signature, message, padding.PKCS1v15(), hashes.SHA1())
+    except InvalidSignature as e:
         logger.error('Verification of signature raised an Error: %s', e)
         return False
 
@@ -140,9 +143,13 @@ def get_pemfile(cert_url):
         pemfile = response.text
         # Extract the first certificate in the file and confirm it's a valid
         # PEM certificate
-        certificates = pem.parse(smart_bytes(pemfile))
-        # A proper certificate file will contain 1 certificate
-        if len(certificates) != 1:
+        pem_bytes = smart_bytes(pemfile)
+        if pem_bytes.count(b'-----BEGIN CERTIFICATE-----') != 1:
+            logger.error('Invalid Certificate File: URL %s', cert_url)
+            raise ValueError('Invalid Certificate File')
+        try:
+            x509.load_pem_x509_certificate(pem_bytes)
+        except ValueError:
             logger.error('Invalid Certificate File: URL %s', cert_url)
             raise ValueError('Invalid Certificate File')
 
